@@ -28,6 +28,10 @@ class EldisTestSpec extends AnyFlatSpec
     override def read(ids: List[FooId]) = Some(
       ids.map(data.get _).collect{ case Some(x) => x }.toSet[Foo]
     )
+   }
+
+  def repoFault = new FooRepository[Option] {
+    override def read(ids: List[FooId]) = None
   }
 
   val tests = Table(
@@ -48,4 +52,7 @@ class EldisTestSpec extends AnyFlatSpec
     }
   }
 
+  "#readClosure When databse connection fault" should "return None" in {
+    readClosure(repoFault, List(FooId(1))) should be(None)
+  }
 }
