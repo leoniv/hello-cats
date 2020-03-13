@@ -27,7 +27,7 @@ object EldisTest {
       } yield Left(acc ++ sel, toIds(sel -- acc))
     }
 
-  def readClosureReq[F[_]: Monad](
+  def readClosureRec[F[_]: Monad](
     repo: FooRepository[F], ids: List[FooId]): F[Set[Foo]] = {
 
     def readRepo(ss: Set[Foo]) = repo.read(
