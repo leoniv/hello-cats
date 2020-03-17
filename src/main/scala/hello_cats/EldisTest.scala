@@ -1,7 +1,6 @@
 package hello_cats
 import cats.implicits._
 import cats.Monad
-import scala.annotation.tailrec
 
 object EldisTest {
   final case class FooId(value: Int) extends AnyVal
@@ -24,7 +23,7 @@ object EldisTest {
       if (ids.isEmpty) Monad[F].pure(Right(acc))
       else for {
         sel <- repo.read(ids)
-      } yield Left(acc ++ sel, toIds(sel -- acc))
+      } yield Left(acc ++ sel -> toIds(sel -- acc))
     }
 
   def readClosureRec[F[_]: Monad](
