@@ -5,13 +5,19 @@ import org.scalatest.matchers.should._
 import org.scalatest.freespec.AnyFreeSpec
 import hello_cats.printable_lib.PrintableLib.Printable
 import PrintableLib._
+import PrintableLib.PrintableInstances._
 
 class PrintableSpec extends AnyFreeSpec with Matchers {
   case class Cat(name: String, age: Int, color: String)
 
   object Cat {
     implicit val catPrintable: Printable[Cat] = new Printable[Cat] {
-      def format(c: Cat) = s"${c.name} is a ${c.age} year-old ${c.color} cat"
+      def format(c: Cat) = {
+        val name  = Printable.format(c.name)
+        val age   = Printable.format(c.age)
+        val color = Printable.format(c.color)
+        s"${name} is a ${age} year-old ${color} cat"
+      }
     }
   }
 
