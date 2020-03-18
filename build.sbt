@@ -16,5 +16,5 @@ scalacOptions ++= Seq(
   "-Xlint",
   "-Xfatal-warnings"
 )
-
+scalacOptions in (Compile, console) ++= Seq("-Ywarn-unused:-imports")
 
