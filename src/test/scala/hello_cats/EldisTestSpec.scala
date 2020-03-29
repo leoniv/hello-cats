@@ -55,4 +55,9 @@ class EldisTestSpec extends AnyFlatSpec
   "#readClosure When databse connection fault" should "return None" in {
     readClosure(repoFault, List(FooId(1))) should be(None)
   }
+
+  "#readClosureRec When databse connection fault" should "return None" in {
+    readClosureRec(repoFault, List(FooId(1))) should be(None)
+  }
+
 }

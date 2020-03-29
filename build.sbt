@@ -3,7 +3,7 @@ scalacOptions += "-language:higherKinds"
 addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.full)
 
 libraryDependencies ++= Seq(
-  "org.typelevel" %% "cats-core" % "2.0.0",
+  "org.typelevel" %% "cats-core" % "2.1.1",
   "org.scalactic" %% "scalactic" % "3.1.1",
   "org.scalatest" %% "scalatest" % "3.1.1" % "test"
 )
@@ -13,8 +13,6 @@ scalacOptions ++= Seq(
   "-encoding", "UTF-8",
   "-feature",
   "-unchecked",
-  "-Xlint",
-  "-Xfatal-warnings"
+  "-Xlint"
 )
-scalacOptions in (Compile, console) ++= Seq("-Ywarn-unused:-imports")
 
