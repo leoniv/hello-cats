@@ -8,8 +8,6 @@ import cats.instances.list._
 import cats.instances.either._
 
 class ValidatorLibSpec extends AnyFreeSpec with Matchers {
-  case class User(name: String, age: Int, email: String)
-
   "Predicate" - {
     val error = (m: String) => List(m)
     val invalid = (m: String) => Predicate.lift(error(m), (_: Any) => false)
@@ -38,22 +36,25 @@ class ValidatorLibSpec extends AnyFreeSpec with Matchers {
       readKey("k").run(Map("k" -> 1)) should be(Right(1))
     }
 
-    "#mustBeKey" in {
-      mustBeKey("k").run(Map()) should be(Invalid(error("Key `k' not found")))
-      mustBeKey("k").run(Map("k" -> 1)) should be(Valid(Map("k" -> 1)))
-    }
-
     "#isInt" in {
       isInt("-123") should be(Valid("-123"))
       isInt("123") should be(Valid("123"))
       isInt("123") should be(Valid("123"))
       isInt("abc") should be(Invalid(error("Must be a number")))
     }
+
+    "#moreThan" in {
+      moreThan(10).run(11) should be(Valid(11))
+      moreThan(10).run(10) should be(Invalid(error("Must be more than 10")))
+    }
+
+    "#lessThan" in {
+      lessThan(10).run(9) should be(Valid(9))
+      lessThan(10).run(10) should be(Invalid(error("Must be less than 10")))
+    }
   }
 
-  def const[A, B](a: A)(b: B): A = a
-
-  "Example #makeUser" - {
+  "Examples" - {
     val validInput = Map(
       "name" -> "Name",
       "age" -> "42",
@@ -66,38 +67,51 @@ class ValidatorLibSpec extends AnyFreeSpec with Matchers {
       "email" -> "example.com"
     )
 
-    def readAge: Check[Input[String], Int] = for {
-      age <- readKey[String]("age")
-      _ <- pred2check(isInt.contramap(const[String, Input[String]](age)))
-    } yield age.toInt
+    type InputS = Input[String]
 
-    def validateAge: Predicate[Errors, Input[_]] = ??? /*
-    check2pred(
-      readKey[String]("age") flatMap { age =>
-        check(in => isInt.contramap(in => age))
-      }
+    def readAge: Check[InputS, Int] =
+      for {
+        age <- readKey[String]("age")
+        _ <- checkWith[InputS, String](isInt)(age)
+        _ <- checkWith[InputS, Int](
+          moreThan(14) and lessThan(100)
+        )(age.toInt)
+      } yield age.toInt
 
-    // flatMap ((age: String) => pred2check(isInt(age)))
-    )
-    */
+    def readName: Check[InputS, String] =
+      for {
+        name <- readKey[String]("name")
+        _ <- checkWith(alphanumeric and longerThan(3))(name)
+      } yield name
+
+    def readEmail: Check[InputS, String] =
+      for {
+        email <- readKey[String]("email")
+      } yield email
 
     def readInputMonadic =
       for {
-        name <- readKey[String]("name")
-        age <- readKey[String]("age")
-        email <- readKey[String]("email")
+        name <- readName
+        age <- readAge
+        email <- readEmail
       } yield (name, age, email)
 
-    def readInputApplicative = (
-      mustBeKey("name") and
-      validateAge and
-      mustBeKey("email")
+    def readInputApplicative =
+      for {
+        _ <- pred2check(validateInputApplicative)
+        r <- readInputMonadic
+      } yield r
+
+    def validateInputApplicative: Predicate[Errors, InputS] = (
+      check2pred[InputS](readName) and
+        check2pred[InputS](readAge) and
+        check2pred[InputS](readEmail)
     )
 
     "Fail-fast input read" - {
       "Read succsess" in {
         readInputMonadic.run(validInput) should
-          be(Right(("Name", "42", "name@example.com")))
+          be(Right(("Name", 42, "name@example.com")))
       }
 
       "Read failure" in {
@@ -106,17 +120,17 @@ class ValidatorLibSpec extends AnyFreeSpec with Matchers {
       }
     }
 
-    "Multy error input read" - {
+    "Multy-error input read" - {
       "Read success" in {
         readInputApplicative(validInput) should
-          be(Valid(validInput))
+          be(Right(("Name", 42, "name@example.com")))
       }
 
       "Read error" - {
         "When key not found" in {
           readInputApplicative { validInput - "name" - "email" } should
             be(
-              Invalid(
+              Left(
                 "Key `name' not found" ::
                   error("Key `email' not found")
               )
@@ -126,7 +140,7 @@ class ValidatorLibSpec extends AnyFreeSpec with Matchers {
         "When value invalid" in {
           readInputApplicative { invalidInput - "name" - "email" } should
             be(
-              Invalid(
+              Left(
                 "Key `name' not found" ::
                   "Must be a number" ::
                   error("Key `email' not found")
@@ -135,25 +149,5 @@ class ValidatorLibSpec extends AnyFreeSpec with Matchers {
         }
       }
     }
-
-//    def makeUser(in: Input[String]) = {
-//      (checkName, checkAge, checkEmail)
-//    }
-//
-//
-//    "When input contains valid data should make instance of User" in {
-//      makeUser(validInput) should
-//        be (Valid(User("Name", 42, "name@example.com")))
-//    }
-//
-//    "When input contains invalid data sould returns errors" in {
-//      makeUser(invalidInput) should
-//        be (Invalid(List("Must be none empty string",
-//                      "Must be a number",
-//                      "Must be one word",
-//                      "Must have dot")
-//                    )
-//                  )
-//    }
   }
 }

@@ -20,49 +20,47 @@ object ValidatorLib {
 
     def apply(a: A)(implicit s: Semigroup[E]): Validated[E, A]
     def run(a: A)(implicit s: Semigroup[E]): Validated[E, A] = this(a)
-    def or(other: Predicate[E,A]) = Or(this, other)
-    def and(other: Predicate[E,A]) = And(this, other)
+    def or(other: Predicate[E, A]) = Or(this, other)
+    def and(other: Predicate[E, A]) = And(this, other)
     def contramap[B](f: B => A)(implicit s: Semigroup[E]): Predicate[E, B] =
       Pure((b: B) => apply(f(b)) map (const(b)))
   }
 
   object Predicate {
-    case class Pure[E, A](fn: A => Validated[E,A]) extends Predicate[E, A] {
+    case class Pure[E, A](fn: A => Validated[E, A]) extends Predicate[E, A] {
       def apply(a: A)(implicit s: Semigroup[E]) = fn(a)
     }
 
-    case class Or[E, A](
-      left: Predicate[E, A],
-      right: Predicate[E, A]) extends Predicate[E, A] {
+    case class Or[E, A](left: Predicate[E, A], right: Predicate[E, A])
+        extends Predicate[E, A] {
       def apply(a: A)(implicit s: Semigroup[E]) = left(a) match {
         case Valid(_) => Valid(a)
-        case Invalid(e1) => right(a) match {
-          case Valid(_) => Valid(a)
-          case Invalid(e2) => Invalid(s.combine(e1, e2))
-        }
+        case Invalid(e1) =>
+          right(a) match {
+            case Valid(_)    => Valid(a)
+            case Invalid(e2) => Invalid(s.combine(e1, e2))
+          }
       }
     }
 
-    case class And[E, A](
-      left: Predicate[E, A],
-      right: Predicate[E, A]) extends Predicate[E, A] {
-        def apply(a: A)(implicit s: Semigroup[E]) =
-          (left(a), right(a)).mapN{ (_, _) => a }
+    case class And[E, A](left: Predicate[E, A], right: Predicate[E, A])
+        extends Predicate[E, A] {
+      def apply(a: A)(implicit s: Semigroup[E]) =
+        (left(a), right(a)).mapN { (_, _) => a }
     }
 
     def apply[E, A](fn: A => Validated[E, A]) = Pure(fn)
-    def lift[E, A](error: E, p: A => Boolean) = Pure( (a: A) =>
-          if (p(a)) a.valid else error.invalid
-        )
+    def lift[E, A](error: E, p: A => Boolean) =
+      Pure((a: A) => if (p(a)) a.valid else error.invalid)
   }
 
   def check[A, B](fn: A => Result[B]): Check[A, B] = ReaderT(fn)
 
-  def pred2check[A](p: Predicate[Errors, A]): Check[A, A] = check((a: A) =>
-      p(a).toEither
-    )
+  def pred2check[A](p: Predicate[Errors, A]): Check[A, A] =
+    check((a: A) => p(a).toEither)
 
-//FIXME  def checkCombine[A, B](p: Predicate[Errors, A]): Check[A, B]
+  def checkWith[A, B](p: Predicate[Errors, B]): B => Check[A, A] =
+    b => pred2check { p contramap const(b) }
 
   def check2pred[A](ch: Check[A, _]): Predicate[Errors, A] =
     Predicate((a: A) => Validated.fromEither(ch.run(a)) map const(a))
@@ -71,22 +69,20 @@ object ValidatorLib {
 
   private def keyNotFoundError(k: String) = error(s"Key `$k' not found")
 
-  def readKey[A](k: String): Check[Input[A], A] = check( (m: Input[A]) =>
-    m.get(k).toRight(keyNotFoundError(k))
-  )
-
-  def mustBeKey(k: String): Predicate[Errors, Input[_]] =
-    check2pred(readKey(k))
+  def readKey[A](k: String): Check[Input[A], A] =
+    check((m: Input[A]) => m.get(k).toRight(keyNotFoundError(k)))
 
   def longerThan(n: Int): Predicate[Errors, String] =
     Predicate.lift(
       error(s"Must be longer than $n characters"),
-      str => str.size > n)
+      str => str.size > n
+    )
 
   val alphanumeric: Predicate[Errors, String] =
     Predicate.lift(
       error(s"Must be all alphanumeric characters"),
-      str => str.forall(_.isLetterOrDigit))
+      str => str.forall(_.isLetterOrDigit)
+    )
 
   def isInt: Predicate[Errors, String] =
     Predicate.lift(
@@ -94,14 +90,27 @@ object ValidatorLib {
       str => """^-?\d+""".r.matches(str)
     )
 
+  def moreThan(n: Int): Predicate[Errors, Int] =
+    Predicate.lift(
+      error(s"Must be more than $n"),
+      _ > n
+    )
+
+  def lessThan(n: Int): Predicate[Errors, Int] =
+    Predicate.lift(
+      error(s"Must be less than $n"),
+      _ < n
+    )
 
   def contains(char: Char): Predicate[Errors, String] =
     Predicate.lift(
       error(s"Must contain the character $char"),
-      str => str.contains(char))
+      str => str.contains(char)
+    )
 
   def containsOnce(char: Char): Predicate[Errors, String] =
     Predicate.lift(
       error(s"Must contain the character $char only once"),
-      str => str.filter(c => c == char).size == 1)
+      str => str.filter(c => c == char).size == 1
+    )
 }
