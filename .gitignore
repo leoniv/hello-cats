@@ -1,6 +1,5 @@
 .metals/
 target/
-project/
 project/project/
 project/target/
 project/metals.sbt

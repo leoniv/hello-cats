@@ -1,18 +1,6 @@
-scalaVersion := "2.13.1"
-scalacOptions += "-language:higherKinds"
-addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.full)
+import HelloCats._
 
-libraryDependencies ++= Seq(
-  "org.typelevel" %% "cats-core" % "2.1.1",
-  "org.scalactic" %% "scalactic" % "3.1.1",
-  "org.scalatest" %% "scalatest" % "3.1.1" % "test"
-)
+scalaVersion in ThisBuild := Dependencies.Versions.scala
 
-scalacOptions ++= Seq(
-  "-deprecation",
-  "-encoding", "UTF-8",
-  "-feature",
-  "-unchecked",
-  "-Xlint"
-)
-
+lazy val core = HelloCats.core
+lazy val root = HelloCats.root
