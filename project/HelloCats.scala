@@ -11,10 +11,19 @@ object HelloCats {
     .settings(name := "hello-cats-core",
       libraryDependencies ++= Dependencies.core)
 
+  lazy val effect_cc = project
+    .in(file("effect_cc"))
+    .configure(base)
+    .settings(name := "hello-cats-effect-copy-contents",
+      libraryDependencies ++= Dependencies.core,
+      libraryDependencies ++= Dependencies.catsEffect
+    )
+
   lazy val root = project
     .in(file("."))
     .aggregate(
-      core
+      core,
+      effect_cc
     )
 }
 

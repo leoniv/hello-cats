@@ -19,10 +19,15 @@ object Dependencies {
   object Libs {
     val cats = "org.typelevel" %% "cats-core" % "2.1.1"
     val scalatest = "org.scalatest" %% "scalatest" % "3.1.1" % "test"
+    val catsEffect = "org.typelevel" %% "cats-effect" % "2.1.1"
   }
 
   val core = Seq(
     Libs.cats,
     Libs.scalatest
+  )
+
+  val catsEffect = Seq(
+    Libs.catsEffect
   )
 }
