@@ -8,13 +8,25 @@ object HelloCats {
   lazy val core = project
     .in(file("core"))
     .configure(base)
-    .settings(name := "hello-cats-core",
-      libraryDependencies ++= Dependencies.core)
+    .settings(
+      name := "hello-cats-core",
+      libraryDependencies ++= Dependencies.core
+    )
+
+  lazy val effect = project
+    .in(file("effect"))
+    .configure(base)
+    .settings(
+      name := "hello-cats-effect",
+      libraryDependencies ++= Dependencies.core,
+      libraryDependencies ++= Dependencies.catsEffect
+    )
 
   lazy val effect_cc = project
     .in(file("effect_cc"))
     .configure(base)
-    .settings(name := "hello-cats-effect-copy-contents",
+    .settings(
+      name := "hello-cats-effect-copy-contents",
       libraryDependencies ++= Dependencies.core,
       libraryDependencies ++= Dependencies.catsEffect
     )
@@ -23,7 +35,7 @@ object HelloCats {
     .in(file("."))
     .aggregate(
       core,
+      effect,
       effect_cc
     )
 }
-
