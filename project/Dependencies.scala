@@ -6,7 +6,8 @@ object Dependencies {
   val scalacOptionSettings = scalacOptions ++= Seq(
     "-language:higherKinds",
     "-deprecation",
-    "-encoding", "UTF-8",
+    "-encoding",
+    "UTF-8",
     "-feature",
     "-unchecked",
     "-Xlint",
@@ -16,6 +17,7 @@ object Dependencies {
   object Versions {
     val scala = "2.13.1"
     val specs2 = "4.8.3"
+    val kindProjector = "0.11.0"
   }
 
   object Libs {
@@ -23,6 +25,10 @@ object Dependencies {
     val scalatest = "org.scalatest" %% "scalatest" % "3.1.1" % "test"
     val catsEffect = "org.typelevel" %% "cats-effect" % "2.1.1"
     val specs2 = "org.specs2" %% "specs2-core" % Versions.specs2
+    val kindProjector = compilerPlugin(
+      ("org.typelevel" %% "kind-projector" % Versions.kindProjector)
+        .cross(CrossVersion.full)
+    )
   }
 
   val core = Seq(
@@ -35,6 +41,7 @@ object Dependencies {
   )
 
   val fpInScala = Seq(
-    Libs.specs2 % Test
-    )
+    Libs.specs2 % Test,
+    Libs.kindProjector
+  )
 }
