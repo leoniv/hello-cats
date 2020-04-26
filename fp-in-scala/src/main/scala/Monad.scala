@@ -46,9 +46,7 @@ object Monad {
   trait Ops[F[_], A] {
     def typeClassInstance: Monad[F]
     def self: F[A]
-    def flatMap[B] = typeClassInstance.flatMap[A, B] _
-    def *>[B](b: F[B]): F[B] = typeClassInstance.flatMap(self)((_: A) => b)
-    def <*[B](b: F[B]): F[A] = typeClassInstance.flatMap(b)((_: B) => self)
-    def >>[B] = flatMap[B] _
+    def flatMap[B](f: A => F[B]) = typeClassInstance.flatMap[A, B](self)(f)
+    def >>[B](f: A => F[B]) = flatMap(f)
   }
 }
