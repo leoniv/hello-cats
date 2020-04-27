@@ -1,10 +1,10 @@
 package fp.in.scala
 
 trait Monad[F[_]] extends Functor[F] {
-  def ret[A](a: A): F[A]
+  def ret[A](a: => A): F[A]
   def flatMap[A, B](m: F[A])(f: A => F[B]): F[B]
 
-  def unit[A](a: A): F[A] = ret(a)
+  def unit[A](a: => A): F[A] = ret(a)
   def map[A, B](a: F[A])(f: A => B): F[B] = flatMap(a)(a => unit(f(a)))
   def fmap[A, B](f: F[A])(g: A => B): F[B] = map[A, B](f)(g)
   def tailRecM[A, B](a: A)(f: A => F[Either[A, B]]): F[B]
@@ -22,10 +22,18 @@ trait Monad[F[_]] extends Functor[F] {
   }
 
   def skip[A](fa: F[A]): F[Unit] = as(fa)(())
-  def map2[A, B, C](fa: F[A], fb: F[B])(f: (A, B) => C): F[C] = for {
-    a <- fa
-    b <- fb
-  } yield f(a, b)
+  def map2[A, B, C](fa: F[A], fb: F[B])(f: (A, B) => C): F[C] =
+    for {
+      a <- fa
+      b <- fb
+    } yield f(a, b)
+  def forever[A, B](fa: F[A]): F[B] = {
+    lazy val loop: F[B] = for {
+      _ <- fa
+      b <- loop
+    } yield b
+    loop
+  }
 
   protected def defaultTailRecM[A, B](a: A)(f: A => F[Either[A, B]]): F[B] =
     flatMap(f(a)) {
@@ -62,7 +70,7 @@ object Monad {
 
   object instances {
     implicit def eitherMonad[L]: Monad[Either[L, *]] = new Monad[Either[L, *]] {
-      def ret[A](a: A): Either[L, A] = Right(a)
+      def ret[A](a: => A): Either[L, A] = Right(a)
       def flatMap[A, B](m: Either[L, A])(f: A => Either[L, B]): Either[L, B] =
         m match {
           case Left(value)  => Left(value)

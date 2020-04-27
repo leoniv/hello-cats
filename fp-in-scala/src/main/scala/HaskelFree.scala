@@ -16,7 +16,7 @@ object LazyFree {
   object instances {
     implicit def freeMonad[F[_]: Monad]: Monad[Free[F, *]] =
       new Monad[Free[F, *]] {
-        def ret[A](a: A): Free[F, A] = LazyFree.ret(a)
+        def ret[A](a: => A): Free[F, A] = LazyFree.ret(a)
         def flatMap[A, B](m: Free[F, A])(f: A => Free[F, B]): Free[F, B] =
           LazyFree.flatMap(m)(f)
         def tailRecM[A, B](a: A)(f: A => Free[F, Either[A, B]]): Free[F, B] =
@@ -41,7 +41,7 @@ object HaskellFree {
   object instances {
     implicit def freeMonad[F[_]: Functor]: Monad[Free[F, *]] =
       new Monad[Free[F, *]] {
-        def ret[A](a: A) = HaskellFree.pure(a)
+        def ret[A](a: => A) = HaskellFree.pure(a)
         def flatMap[A, B](m: Free[F, A])(f: A => Free[F, B]): Free[F, B] =
           m match {
             case Pure(a)     => f(a)
