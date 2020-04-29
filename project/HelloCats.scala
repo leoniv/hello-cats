@@ -31,11 +31,12 @@ object HelloCats {
       libraryDependencies ++= Dependencies.catsEffect
     )
 
-    lazy val fpInScala = project
+  lazy val fpInScala = project
     .in(file("fp-in-scala"))
-    .settings(name := "fp-in-scala",
+    .settings(
+      name := "fp-in-scala",
       libraryDependencies ++= Dependencies.fpInScala
-      )
+    )
 
   lazy val root = project
     .in(file("."))
