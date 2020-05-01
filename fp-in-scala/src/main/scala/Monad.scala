@@ -87,6 +87,18 @@ object Monad {
             }
         }
     }
+
+    implicit def function1Monad[X]: Monad[Function1[X, *]] =
+      new Monad[Function1[X, *]] {
+        def ret[A](a: => A): X => A = _ => a
+        def flatMap[A, B](f: X => A)(g: A => (X => B)): X => B = x => g(f(x))(x)
+        @annotation.tailrec
+        def tailRecM[A, B](a: A)(f: A => (X => Either[A, B])): X => B =
+          x => f(a)(x) match {
+              case Left(a)  => tailRecM(a)(f)
+              case Right(fb) => fb
+            }
+      }
   }
 
   object ops {
