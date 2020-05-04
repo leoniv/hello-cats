@@ -37,7 +37,9 @@ object Dependencies {
   )
 
   val catsEffect = Seq(
-    Libs.catsEffect
+    Libs.catsEffect,
+    Libs.specs2 % Test,
+    Libs.kindProjector
   )
 
   val fpInScala = Seq(
