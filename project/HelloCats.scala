@@ -31,6 +31,15 @@ object HelloCats {
       libraryDependencies ++= Dependencies.catsEffect
     )
 
+  lazy val effect_echo_srv = project
+    .in(file("effect_echo_srv"))
+    .configure(base)
+    .settings(
+      name := "hello-cats-effect-echo-server",
+      libraryDependencies ++= Dependencies.core,
+      libraryDependencies ++= Dependencies.catsEffect
+    )
+
   lazy val fpInScala = project
     .in(file("fp-in-scala"))
     .settings(
