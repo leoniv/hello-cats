@@ -5,6 +5,8 @@ import java.io._
 import cats.implicits._
 import cats.effect.ExitCase.Completed
 import cats.effect.concurrent.MVar
+import java.util.concurrent.Executors
+import scala.concurrent.ExecutionContext
 
 object Main extends IOApp {
   def run(args: List[String]): IO[ExitCode] = {
@@ -18,17 +20,22 @@ object Main extends IOApp {
       } { server => close(server) >> IO { println("Server finished") } }
   }
 
-  def server[F[_]: Concurrent](serverSocket: ServerSocket) =
+  def server[F[_]: Concurrent: ContextShift](serverSocket: ServerSocket) =
+  { val thredPool = Executors.newCachedThreadPool()
+    val clientEc = ExecutionContext.fromExecutor(thredPool)
     for {
       cancel <- MVar[F].empty[Unit]
-      server <- serve(serverSocket, cancel).start
+      server <- serve(serverSocket, cancel, clientEc).start
       _ <- cancel.read
+      _ <- Sync[F].delay(thredPool.shutdown())
       _ <- server.cancel.start
     } yield ()
+  }
 
-  def echoProtocol[F[_]: Sync](
+  def echoProtocol[F[_]: Sync: ContextShift](
       socket: Socket,
-      cancel: MVar[F, Unit]
+      cancel: MVar[F, Unit],
+      clientEc: ExecutionContext
   ): F[Unit] = {
     val in = Resource.fromAutoCloseable(
       Sync[F].delay(
@@ -44,7 +51,7 @@ object Main extends IOApp {
 
     def loop(in: BufferedReader, out: BufferedWriter): F[Unit] =
       for {
-        mess <- Sync[F].delay(in.readLine())
+        mess <- implicitly[ContextShift[F]].evalOn(clientEc)(Sync[F].delay(in.readLine()))
         _ <- mess match {
           case "RISE" => throw new Error("RISE")
           case "STOP" => cancel.put(())
@@ -64,9 +71,10 @@ object Main extends IOApp {
     } yield (in, out)).use((loop _).tupled)
   }
 
-  def serve[F[_]: Concurrent](
+  def serve[F[_]: Concurrent: ContextShift](
       server: ServerSocket,
-      cancel: MVar[F, Unit]
+      cancel: MVar[F, Unit],
+      clientEc: ExecutionContext
   ): F[Unit] = {
     def close(socket: Socket): F[Unit] =
       Sync[F].delay(socket.close()).handleError(_ => Sync[F].unit)
@@ -75,7 +83,7 @@ object Main extends IOApp {
       session <- Sync[F]
         .delay(server.accept())
         .bracketCase(socket =>
-          echoProtocol(socket, cancel).guarantee(close(socket)).start
+          echoProtocol(socket, cancel, clientEc).guarantee(close(socket)).start
         ) { (socket, exit) =>
           exit match {
             case Completed => Sync[F].unit
@@ -83,7 +91,7 @@ object Main extends IOApp {
           }
         }
         _ <-  Concurrent[F].start(cancel.read.flatMap(_ => session.cancel))
-      _ <- serve(server, cancel)
+      _ <- serve(server, cancel, clientEc)
     } yield ()
   }
 }
