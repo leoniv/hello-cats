@@ -16,12 +16,7 @@ object Par {
     def ret[A](a: => A): Par[A] = unit(a)
     def flatMap[A, B](m: Par[A])(f: A => Par[B]): Par[B] =
       (es: ExecutorService) => f(m(es).get)(es)
-    @annotation.tailrec
-    def tailRecM[A, B](a: A)(f: A => Par[Either[A, B]]): Par[B] =
-      as => f(a)(as).get match {
-        case Left(a) => tailRecM(a)(f)(as)
-        case Right(b) => UnitFuture(b)
-      }
+    def tailRecM[A, B](a: A)(f: A => Par[Either[A, B]]): Par[B] = ???
   }
 
   def unit[A](a: A): Par[A] = _ => UnitFuture(a)
